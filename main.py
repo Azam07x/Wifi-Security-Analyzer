@@ -1,7 +1,4 @@
-#!/usr/bin/env python3
 """
-main.py
--------
 Wi-Fi Security Analyzer — CLI entry point.
 
 Defensive, local-only tool. See README.md for full details and
@@ -19,20 +16,41 @@ import recommendations as rec_module
 import report_generator
 from utils import print_header, print_kv_block, UNKNOWN
 
-LAST_ASSESSMENT = {}  # in-memory only, cleared on exit; never written to disk directly
+
+LAST_ASSESSMENT = {}  # in-memory only, cleared on exit
+
+
+def get_security_rating(score):
+    """Return a human-readable rating for the overall security score."""
+    if score >= 90:
+        return "Excellent"
+    elif score >= 75:
+        return "Good"
+    elif score >= 60:
+        return "Fair"
+    elif score >= 40:
+        return "Weak"
+    else:
+        return "Critical"
 
 
 def scan_and_assess(show_output=True):
-    """Run a full scan + classification + scoring pass. Returns the assessment dict."""
+    """Run a full scan + classification + scoring pass."""
     network_info = scanner.scan_current_network()
+
     security_info = security_analyzer.classify_security(
-        network_info.get("security"), network_info.get("encryption")
+        network_info.get("security"),
+        network_info.get("encryption")
     )
-    wps_status = security_analyzer.classify_wps(network_info.get("wps"))
+
+    wps_status = security_analyzer.classify_wps(
+        network_info.get("wps")
+    )
 
     if show_output:
         print()
         print_header("WI-FI SECURITY ANALYZER")
+
         print_kv_block([
             ("SSID", network_info.get("ssid", UNKNOWN)),
             ("Interface", network_info.get("interface", UNKNOWN)),
@@ -47,9 +65,10 @@ def scan_and_assess(show_output=True):
         ])
 
         risk = security_info.get("risk_level", UNKNOWN)
+
         if risk in ("critical", "high"):
             print(f"[-] Risk level: {risk.upper()}")
-        elif risk in ("medium",):
+        elif risk == "medium":
             print(f"[!] Risk level: {risk.upper()}")
         elif risk in ("low", "none"):
             print(f"[+] Risk level: {risk.upper()}")
@@ -61,35 +80,53 @@ def scan_and_assess(show_output=True):
         "security_info": security_info,
         "wps_status": wps_status,
     })
+
     return LAST_ASSESSMENT
 
 
 def run_password_analysis(show_output=True):
+    """Analyze Wi-Fi password strength locally."""
     print()
     print("Password is analyzed locally only — never stored, logged, or transmitted.")
+
     try:
-        pwd = getpass.getpass("Enter Wi-Fi passphrase to analyze (input hidden): ")
+        pwd = getpass.getpass(
+            "Enter Wi-Fi passphrase to analyze (input hidden): "
+        )
     except Exception:
         pwd = input("Enter Wi-Fi passphrase to analyze: ")
 
     result = password_analyzer.analyze_password_strength(pwd)
-    pwd = None  # drop reference immediately after analysis
+
+    # Drop password reference immediately after analysis.
+    pwd = None
     del pwd
 
     if show_output:
         print()
-        print(f"Password Strength: {result['label']}")
-        print(f"Score: {result['score']}/100")
+        print("=" * 40)
+        print("PASSWORD STRENGTH".center(40))
+        print("=" * 40)
+        print(f"Password Score : {result['score']}/100")
+        print(f"Rating         : {result['label']}")
+        print()
+        print("Important: This score measures ONLY the strength")
+        print("of your Wi-Fi password.")
         print()
         print("Recommendations:")
+
         for r in result["recommendations"]:
             print(f"  - {r}")
 
+        print("=" * 40)
+
     LAST_ASSESSMENT["password_result"] = result
+
     return result
 
 
 def generate_report():
+    """Generate a security report from the current assessment."""
     if "network_info" not in LAST_ASSESSMENT:
         print("\n[!] Run a scan first (option 1) before generating a report.")
         return
@@ -99,11 +136,13 @@ def generate_report():
         LAST_ASSESSMENT["wps_status"],
         LAST_ASSESSMENT.get("password_result"),
     )
+
     recs = rec_module.generate_recommendations(
         LAST_ASSESSMENT["security_info"],
         LAST_ASSESSMENT["wps_status"],
         LAST_ASSESSMENT.get("password_result"),
     )
+
     report_data = report_generator.build_report_data(
         LAST_ASSESSMENT["network_info"],
         LAST_ASSESSMENT["security_info"],
@@ -113,25 +152,89 @@ def generate_report():
         LAST_ASSESSMENT.get("password_result"),
     )
 
+    # Clear explanation before export.
+    print()
+    print("=" * 40)
+    print("SECURITY SCORE SUMMARY".center(40))
+    print("=" * 40)
+
+    password_result = LAST_ASSESSMENT.get("password_result")
+
+    if password_result:
+        print(
+            f"Password Strength Score : "
+            f"{password_result['score']}/100"
+        )
+        print(
+            f"Password Rating         : "
+            f"{password_result['label']}"
+        )
+        print()
+        print(
+            "Note: Password Score measures only "
+            "the Wi-Fi password."
+        )
+    else:
+        print("Password Strength       : Not analyzed")
+
+    print()
+
+    overall_score = score_result["score"]
+    overall_rating = get_security_rating(overall_score)
+
+    print(
+        f"Overall Wi-Fi Security Score : "
+        f"{overall_score}/100"
+    )
+    print(
+        f"Overall Security Rating       : "
+        f"{overall_rating}"
+    )
+    print()
+    print(
+        "Note: Overall Security Score evaluates the "
+        "complete Wi-Fi security configuration."
+    )
+    print(
+        "It includes security protocol, encryption, "
+        "WPS status and password strength."
+    )
+
+    print("=" * 40)
+
     print()
     print("Export format:")
     print("  [1] TXT")
     print("  [2] JSON")
     print("  [3] HTML")
+
     choice = input("Choose format: ").strip()
-    fmt_map = {"1": "txt", "2": "json", "3": "html"}
+
+    fmt_map = {
+        "1": "txt",
+        "2": "json",
+        "3": "html"
+    }
+
     fmt = fmt_map.get(choice)
+
     if not fmt:
         print("[!] Invalid choice.")
         return
 
     path = report_generator.EXPORTERS[fmt](report_data)
+
+    print()
     print(f"[+] Report saved to: {path}")
 
 
 def view_recommendations():
+    """Display tailored security recommendations."""
     if "network_info" not in LAST_ASSESSMENT:
-        print("\n[!] Run a scan first (option 1) to get tailored recommendations.")
+        print(
+            "\n[!] Run a scan first (option 1) "
+            "to get tailored recommendations."
+        )
         return
 
     recs = rec_module.generate_recommendations(
@@ -139,23 +242,50 @@ def view_recommendations():
         LAST_ASSESSMENT["wps_status"],
         LAST_ASSESSMENT.get("password_result"),
     )
+
     score_result = scoring.calculate_security_score(
         LAST_ASSESSMENT["security_info"],
         LAST_ASSESSMENT["wps_status"],
         LAST_ASSESSMENT.get("password_result"),
     )
 
+    overall_score = score_result["score"]
+    overall_rating = get_security_rating(overall_score)
+
     print()
-    print(f"Security Score: {score_result['score']}/100")
+    print("=" * 40)
+    print("OVERALL WI-FI SECURITY".center(40))
+    print("=" * 40)
+    print(f"Security Score : {overall_score}/100")
+    print(f"Rating         : {overall_rating}")
+
+    password_result = LAST_ASSESSMENT.get("password_result")
+
+    if password_result:
+        print()
+        print(
+            f"Password Score: "
+            f"{password_result['score']}/100"
+        )
+        print(
+            f"Password Rating: "
+            f"{password_result['label']}"
+        )
+
     print()
     print("Breakdown:")
+
     for label, points in score_result["breakdown"]:
         sign = "+" if points >= 0 else ""
         print(f"  {sign}{points}  {label}")
+
     print()
     print("Recommendations:")
+
     for i, r in enumerate(recs, 1):
         print(f"  {i}. {r}")
+
+    print("=" * 40)
 
 
 def print_menu():
@@ -172,24 +302,35 @@ def print_menu():
 
 
 def main():
-    print("Wi-Fi Security Analyzer — defensive, local-only assessment tool.")
-    print("This tool only analyzes networks/interfaces you own or are authorized to test.")
+    print(
+        "Wi-Fi Security Analyzer — defensive, local-only assessment tool."
+    )
+    print(
+        "This tool only analyzes networks/interfaces "
+        "you own or are authorized to test."
+    )
 
     while True:
         print_menu()
+
         choice = input("Select an option: ").strip()
 
         if choice == "1":
             scan_and_assess()
+
         elif choice == "2":
             run_password_analysis()
+
         elif choice == "3":
             generate_report()
+
         elif choice == "4":
             view_recommendations()
+
         elif choice == "5":
             print("Goodbye.")
             sys.exit(0)
+
         else:
             print("[!] Invalid option, please choose 1-5.")
 
