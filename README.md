@@ -1,79 +1,202 @@
 # Wi-Fi Security Analyzer
 
-A defensive, local-only tool that inspects the Wi-Fi connection your
-computer is currently using, classifies its security configuration,
-scores it, and gives concrete hardening recommendations.
+> A lightweight, privacy-focused Python utility designed to assess the security posture of a locally connected Wi-Fi network.
 
-## Project Objective
+## Overview
 
-Help everyday users and students understand *how secure their own
-Wi-Fi connection is* and *why* — without performing any kind of
-attack, scan of networks they don't control, or password recovery.
-It is built for authorized self-assessment and education only.
+**Wi-Fi Security Analyzer** is a defensive, local-first security assessment tool built with Python.
 
-## Scope & Ethical Boundaries
+The project examines the configuration of the currently connected wireless network, evaluates its security characteristics, analyzes Wi-Fi password strength, and produces an interpretable overall security assessment.
 
-This tool **only reads information your operating system already
-exposes** about the network your machine is currently connected to
-(via `netsh` on Windows or `nmcli`/`iw` on Linux). It does **not**:
+Rather than performing intrusive attacks or attempting to compromise a network, the analyzer focuses on **visibility, risk awareness, and practical security recommendations**.
 
-- crack, guess, or brute-force any password
-- perform Wi-Fi deauthentication or packet injection
-- scan or attack networks you don't own or aren't authorized to test
-- read stored Wi-Fi credentials from the OS
-- transmit any data off your machine
-- store or log the passphrase you type into the password analyzer
+---
 
-Only use this tool on networks and interfaces you own or have
-explicit permission to assess.
+## Key Capabilities
 
-## Features
+- 🔍 **Wireless Configuration Analysis**  
+  Identifies essential information about the currently connected Wi-Fi network.
 
-1. **Network Information** — SSID, interface, status, security type,
-   cipher, signal strength, channel/frequency, WPS status (each
-   field individually degrades to "Unknown / Not available on this
-   platform" if the OS doesn't expose it).
-2. **Security Detection** — classifies Open / WEP / WPA / WPA2 /
-   WPA3 / WPA2-WPA3 mixed mode, and TKIP vs AES/CCMP where available.
-3. **Password Strength Analyzer** — local-only scoring of length,
-   character variety, common-password and pattern checks. The
-   passphrase is never stored, logged, or included in reports.
-4. **Security Score (0–100)** — transparent, itemized breakdown of
-   every point added or deducted.
-5. **Recommendations** — specific, actionable hardening advice based
-   on what was actually detected.
-6. **Report Export** — TXT, JSON, or HTML, saved under `reports/`.
-7. **Clean CLI** — simple numbered menu, `[+]/[!]/[-]` status
-   indicators.
+- 🔐 **Security Protocol Detection**  
+  Determines the wireless security protocol and encryption configuration.
+
+- 🛡️ **WPS Assessment**  
+  Evaluates WPS availability whenever the underlying platform exposes the required information.
+
+- 🔑 **Password Strength Analysis**  
+  Locally evaluates Wi-Fi passphrase strength without storing or transmitting the original password.
+
+- 📊 **Security Scoring Engine**  
+  Combines multiple security factors into a single interpretable Wi-Fi security score.
+
+- 💡 **Security Recommendations**  
+  Generates actionable recommendations based on the detected configuration.
+
+- 📄 **Report Generation**  
+  Exports assessment results in TXT, JSON, and HTML formats.
+
+- 🧪 **Automated Testing**  
+  Includes a dedicated test suite covering the core analysis and scoring logic.
+
+---
+
+## Security Assessment Model
+
+The analyzer evaluates the Wi-Fi configuration across several independent dimensions:
+
+```text
+Security Protocol
+        +
+Encryption / Cipher
+        +
+WPS Configuration
+        +
+Password Strength
+        ↓
+Overall Wi-Fi Security Assessment
+```
+
+The resulting **Overall Wi-Fi Security Score** represents the security posture of the complete Wi-Fi configuration.
+
+### Password Score ≠ Overall Security Score
+
+The project deliberately keeps these two measurements separate.
+
+For example:
+
+```text
+Password Strength
+55/100 — Fair
+
+Overall Wi-Fi Security
+84/100 — Good
+```
+
+This is not a contradiction.
+
+The **Password Strength Score** evaluates only the quality of the Wi-Fi passphrase.
+
+The **Overall Wi-Fi Security Score** evaluates the broader security configuration, including the wireless protocol, encryption, WPS status, and password strength.
+
+This distinction helps prevent users from confusing password quality with the security of the entire wireless configuration.
+
+---
+
+## Security Scoring
+
+The scoring engine evaluates multiple security factors, including:
+
+| Security Factor | Assessment |
+|---|---|
+| WPA3 | Strong |
+| WPA2-AES/CCMP | Strong |
+| WPA2-TKIP | Legacy / Weaker |
+| Legacy WPA | Weak |
+| WEP | Severely Insecure |
+| Open / Unencrypted | Severely Insecure |
+| TKIP | Legacy / Weaker |
+| WPS Enabled | Additional Risk |
+| WPS Disabled | Positive Factor |
+| Password Strength | Contributes to Overall Score |
+
+The final score is normalized to a **0–100 range**.
+
+Every contributing factor is exposed through the score breakdown, making the assessment transparent rather than treating the result as a black box.
+
+---
+
+## Project Architecture
+
+```text
+wifi_security_analyzer/
+│
+├── main.py
+├── scanner.py
+├── security_analyzer.py
+├── password_analyzer.py
+├── scoring.py
+├── recommendations.py
+├── report_generator.py
+├── utils.py
+├── test_analyzer.py
+├── requirements.txt
+├── README.md
+└── reports/
+```
+
+### Core Components
+
+**`main.py`**  
+Provides the interactive command-line interface and coordinates the complete assessment workflow.
+
+**`scanner.py`**  
+Collects locally available wireless network information.
+
+**`security_analyzer.py`**  
+Classifies security protocols, encryption methods, and WPS status.
+
+**`password_analyzer.py`**  
+Performs local Wi-Fi password-strength analysis.
+
+**`scoring.py`**  
+Calculates the overall Wi-Fi security score and provides a transparent scoring breakdown.
+
+**`recommendations.py`**  
+Generates security recommendations based on the detected configuration.
+
+**`report_generator.py`**  
+Produces TXT, JSON, and HTML assessment reports.
+
+**`utils.py`**  
+Contains shared utility functions used throughout the application.
+
+**`test_analyzer.py`**  
+Validates core functionality through automated tests.
+
+---
 
 ## Installation
 
-Requires Python 3.8+. No third-party packages needed.
+### Prerequisites
+
+- Python 3.10 or later
+- Windows operating system
+- Functional Wi-Fi adapter
+- Permission to inspect the local network configuration
+
+### Setup
+
+Clone the repository:
 
 ```bash
-git clone <this-repo-or-copy-the-folder>
-cd wifi_security_analyzer
+git clone https://github.com/Azam07x/Wifi-Security-Analyzer.git
 ```
 
-(Optional, for isolation)
-```bash
-python3 -m venv venv
-source venv/bin/activate      # Windows: venv\Scripts\activate
-pip install -r requirements.txt   # installs nothing extra, documents deps
-```
-
-## How to Run
+Navigate into the project directory:
 
 ```bash
-python3 main.py
+cd Wifi-Security-Analyzer
 ```
 
-You'll see a menu:
+Install the required dependencies:
 
+```bash
+pip install -r requirements.txt
 ```
-========================================
-       WI-FI SECURITY ANALYZER
-========================================
+
+---
+
+## Running the Analyzer
+
+Launch the application with:
+
+```bash
+python main.py
+```
+
+The interactive CLI provides the following options:
+
+```text
 [1] Scan Current Wi-Fi Configuration
 [2] Analyze Password Strength
 [3] Generate Security Report
@@ -81,108 +204,213 @@ You'll see a menu:
 [5] Exit
 ```
 
-## Windows Limitations
+---
 
-- Uses `netsh wlan show interfaces`, which requires an active Wi-Fi
-  connection and a compatible wireless adapter/driver.
-- WPS status is generally **not** exposed by `netsh` and will show as
-  Unknown — this is expected, not a bug.
-- Some fields (exact cipher detail) depend on driver/OS version.
+## Example Assessment
 
-## Linux Limitations
+A typical assessment may display information such as:
 
-- Primary path uses `nmcli` (NetworkManager). If NetworkManager isn't
-  managing your Wi-Fi (e.g. a headless setup using `wpa_supplicant`
-  directly, or systemd-networkd), the tool falls back to `iw`, which
-  exposes less security detail (cipher/WPS often Unknown).
-- WPS status is not reliably available from either `nmcli` or `iw`
-  and will usually show as Unknown.
-- Some commands may require the user to be in an appropriate group
-  (e.g. `netdev`) or may need elevated privileges depending on distro
-  policy.
+```text
+WI-FI SECURITY ANALYZER
 
-## How the Security Score Works
-
-Starting from the detected protocol, points are added or subtracted
-and every line is shown to the user:
-
-| Factor | Points |
-|---|---|
-| WPA3 | +45 |
-| WPA2/WPA3 mixed | +38 |
-| WPA2-AES/CCMP | +35 |
-| WPA2-TKIP | +20 |
-| Legacy WPA | +10 |
-| Security type unknown | +15 (neutral — can't fully assess) |
-| WEP | -30 |
-| Open/unencrypted | -40 |
-| TKIP cipher present | -10 |
-| WPS enabled | -10 |
-| WPS disabled | +5 |
-| Password strength | up to +25 (25% of the 0-100 password score) |
-
-The final score is clamped to the 0–100 range. Every contributing
-factor is printed in the "Breakdown" section so nothing is a black
-box.
-
-## Example Output
-
-```
-------------------------------------------
-SSID              : HomeNetwork
-Interface         : wlan0
-Status            : Connected
-Security          : WPA2
+SSID              : ExampleNetwork
+Interface         : Wi-Fi
+Status            : connected
+Security          : WPA3
 Cipher            : AES/CCMP
-Signal Strength   : -48 dBm
-Channel           : 6
-Frequency         : 2437 MHz
+Signal Strength   : 80%
 WPS               : Unknown / Not available on this platform
-------------------------------------------
-[+] Risk level: LOW
 
-Security Score: 72/100
-
-Breakdown:
-  +35  WPA2-AES/CCMP detected (good)
-  +0   WPS status unknown
-  +37  Password strength: Strong
-
-Recommendations:
-  1. Consider upgrading to WPA3 if your router and devices support it
-  2. Check your router's admin panel to confirm WPS status
-  3. Keep router firmware updated to patch known vulnerabilities
-  4. Use a long, unique Wi-Fi passphrase not reused from other accounts
-  5. Avoid connecting to or broadcasting open Wi-Fi networks
-  6. Periodically review devices connected to your network
+Risk Level        : NONE
 ```
+
+### Password Assessment
+
+```text
+Password Strength : Fair
+Score             : 55/100
+```
+
+### Overall Security Assessment
+
+```text
+Overall Security Score  : 84/100
+Overall Security Rating : Good
+```
+
+The two scores intentionally measure different aspects of the Wi-Fi configuration.
+
+---
+
+## Report Generation
+
+The analyzer supports three report formats:
+
+```text
+TXT
+JSON
+HTML
+```
+
+Generated reports can include:
+
+- Network configuration
+- Security protocol
+- Encryption details
+- WPS status
+- Password-strength assessment
+- Overall security score
+- Score breakdown
+- Security recommendations
+
+Generated report files are stored locally in the `reports/` directory.
+
+Report files are excluded from version control through `.gitignore`.
+
+---
+
+## Privacy by Design
+
+Privacy is a core design principle of this project.
+
+The Wi-Fi passphrase is analyzed **locally in memory** and is never:
+
+- Stored permanently
+- Written to generated reports
+- Logged to the console
+- Transmitted over the network
+
+Only the derived password-strength rating and score are retained for the current assessment.
+
+The tool is designed to provide useful security insights without exposing the original Wi-Fi password.
+
+---
 
 ## Testing
 
+The project includes an automated test suite using `pytest`.
+
+Run the complete test suite with:
+
 ```bash
-python3 -m unittest test_analyzer.py -v
+python -m pytest
 ```
 
-Covers: password strength scoring, security classification (Open /
-WEP / WPA / WPA2 / WPA3 / mixed), score calculation and bounds,
-recommendation generation and de-duplication, and report export
-(TXT/JSON/HTML) — all using synthetic input, no live scan required.
+Current test status:
 
-## Security & Privacy
+```text
+29 passed
+```
 
-- 100% local execution — no network calls to external servers.
-- Passphrases are never written to disk, logged, or embedded in
-  generated reports.
-- Only standard, read-only OS commands are used (`netsh`, `nmcli`,
-  `iw`) via `subprocess` with `shell=False`.
-- No fields are fabricated: anything the OS doesn't expose is clearly
-  labeled "Unknown / Not available on this platform."
+The test suite helps verify the reliability of the security classification, password analysis, scoring, and recommendation logic.
+
+---
+
+## Limitations
+
+The analyzer is intentionally designed as a **defensive security assessment utility**, rather than an offensive Wi-Fi auditing framework.
+
+Some information, particularly WPS status, may be unavailable depending on:
+
+- Operating system
+- Wi-Fi adapter
+- Device drivers
+- Platform-specific capabilities
+
+The security score is an **assessment model**, not a formal security certification or guarantee of network safety.
+
+A high score should therefore be interpreted as an indication of a comparatively strong configuration, not as proof that the network is completely secure.
+
+---
+
+## Ethical Scope
+
+This project is intended exclusively for:
+
+- Personally owned networks
+- Authorized security assessments
+- Educational environments
+- Cybersecurity laboratories
+
+It does **not** attempt to:
+
+- Crack Wi-Fi passwords
+- Exploit wireless networks
+- Bypass authentication
+- Intercept network traffic
+- Attack unauthorized systems
+
+The objective is straightforward:
+
+> **Understand the security posture. Identify weaknesses. Improve the configuration.**
+
+---
+
+## Technology Stack
+
+| Technology | Purpose |
+|---|---|
+| Python | Core application |
+| Pytest | Automated testing |
+| Wi-Fi / Network APIs | Local configuration analysis |
+| HTML | Human-readable reports |
+| JSON | Structured report output |
+| TXT | Lightweight report output |
+| Git & GitHub | Version control and project hosting |
+
+**Database:** Not required.
+
+---
+
+## Project Highlights
+
+This project demonstrates practical experience with:
+
+- Python modular architecture
+- Wireless network configuration analysis
+- Wi-Fi security concepts
+- Security scoring methodologies
+- Password-strength evaluation
+- Defensive cybersecurity practices
+- Automated testing
+- Structured report generation
+- Privacy-conscious software design
+- Git and GitHub workflow
+
+---
 
 ## Future Improvements
 
-- Optional GUI/web dashboard (e.g. a local Flask/Tkinter front end)
-- macOS support via `airport`/`networksetup`
-- Historical trend tracking across repeated scans (score over time)
-- Router firmware-version lookup against a local CVE reference list
-  (still local-only, no external calls without explicit user opt-in)
-- Multi-language recommendation output
+Potential future enhancements include:
+
+- Cross-platform support for Linux
+- Improved WPS detection
+- More detailed wireless security metrics
+- Additional report visualizations
+- Historical assessment comparison
+- Network device visibility
+- More granular risk classification
+
+These improvements are intentionally kept outside the current scope to maintain a lightweight and focused implementation.
+
+---
+
+## Author
+
+**Mohd Azam Ansari**
+
+*MCA Student | Networking & Cybersecurity Enthusiast*
+
+Interested in:
+
+**Networking · Cybersecurity · Python · Linux · Security Analysis**
+
+---
+
+## Disclaimer
+
+This software is provided for educational and defensive security assessment purposes.
+
+Only analyze networks and systems that you own or have explicit authorization to assess.
+
+The results generated by this tool are intended to improve security awareness and configuration hygiene and should not be considered a formal security audit or certification.
