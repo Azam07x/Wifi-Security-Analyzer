@@ -1,0 +1,12 @@
+# Wi-Fi Security Analyzer
+#
+# This project intentionally uses only the Python standard library
+# (subprocess, re, json, os, datetime, getpass, platform, unittest).
+# No third-party packages are required.
+#
+# Requires: Python 3.8+
+#
+# External OS tools used (already present on most systems, not installed
+# via pip):
+#   Windows -> netsh (built into Windows)
+#   Linux   -> nmcli (NetworkManager) and/or iw (wireless-tools / iw package)
