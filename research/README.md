@@ -1,3 +1,3 @@
-# Research Documentation
+## Research Paper
 
-This directory contains the research paper and academic documentation related to the comparative study of WPA2 and WPA3 Wi-Fi security protocols.
+📄 [Download Research Paper – WPA2 vs WPA3](research/WPA2_vs_WPA3_Research_Paper.pdf)
